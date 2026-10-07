@@ -96,34 +96,45 @@ const paint=()=>{h=(h+47)%360;app.style.setProperty("--h",h)};
 let AC;
 function beep(f,d,t){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type="triangle";o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start(AC.currentTime+(t||0));o.stop(AC.currentTime+(t||0)+d)}catch(e){}}
 const tap=i=>{beep(400+(i%8)*60,.09);paint()};
-const yes=()=>{beep(660,.12,0);beep(880,.12,.13);beep(1100,.22,.26)};
+const yes=()=>{beep(784,.1,0);beep(988,.1,.09);beep(1319,.3,.18)};
 const no=()=>beep(220,.28);
 function boom(){["⭐","🎉","✨","💖","🎈","🌟"].forEach((e,k)=>{for(let i=0;i<5;i++){const s=document.createElement("span");s.className="cf";s.textContent=e;s.style.left=R(94)+"%";s.style.animationDelay=(R(600)/1000)+"s";document.body.appendChild(s);setTimeout(()=>s.remove(),2800)}})}
 /* voz */
 function rank(v){let r=0;if(/pt[-_]PT/i.test(v.lang))r+=10;else r+=2;if(/google|natural|online|neural|enhanced|premium/i.test(v.name))r+=3;if(!v.localService)r+=1;if(/joana|catarina|raquel|fernanda|francisca/i.test(v.name))r+=1;return r}
 const ptv=()=>speechSynthesis.getVoices().filter(x=>/^pt/i.test(x.lang));
 function loadV(){try{let sv=null;try{sv=localStorage.getItem("ab_voice")}catch(e){}const v=ptv();VOICE=v.find(x=>x.name===sv)||v.slice().sort((a,b)=>rank(b)-rank(a))[0]||null;voiceOk=!!VOICE}catch(e){voiceOk=false}}
-function voices(){tok++;const v=ptv();app.innerHTML=bar("Escolher voz")+`<div class="msg" style="font-size:1rem">Toca numa voz para a ouvir. A que escolheres fica guardada.</div>`+(v.length?v.map((x,i)=>`<button class="act" style="display:block;width:100%;text-align:left;margin:6px 0" onclick="setV(${i})">${x.name} (${x.lang})</button>`).join(""):`<div class="msg">Nenhuma voz em português encontrada. Instala em Definições > Texto para voz.</div>`)}
-function setV(i){VOICE=ptv()[i];try{localStorage.setItem("ab_voice",VOICE.name)}catch(e){}say("Olá! Esta é a minha voz. Vamos aprender juntos?")}
+function voices(){tok++;const v=ptv(),chips=(arr,cur,fn)=>`<div class="chips" style="justify-content:center">`+arr.map(a=>`<button class="chip ${cur==a[1]?"on":""}" onclick="${fn}(${a[1]})">${a[0]}</button>`).join("")+`</div>`,t=x=>`<div class="msg" style="font-size:1rem">${x}</div>`;
+ app.innerHTML=bar("Voz")+t("Voz atual: "+(VOICE?VOICE.name+" ("+VOICE.lang+")":"nenhuma"))+(VOICE&&!/PT/i.test(VOICE.lang)?t("⚠️ Sem voz de Portugal. Instala em Definições > Texto para voz."):"")+t("Velocidade")+chips([["🐢 Lenta",.7],["Normal",.85],["🐇 Rápida",1]],VR,"sv")+t("Tom")+chips([["Grave",.9],["Normal",1.05],["Agudo",1.25]],PI,"sp")+t("Ouvir exemplos")+`<div class="chips" style="justify-content:center;flex-wrap:wrap"><button class="chip" onclick="say('bá, bê, bi, bô, bu')">Sílabas</button><button class="chip" onclick="say('á, bê, cê, dê, é, éfe')">Letras</button><button class="chip" onclick="say('um, dois, três, quatro, cinco')">Números</button><button class="chip" onclick="say('Abêlha, Bola, Casa, Dado')">Palavras</button></div>`+t("Escolher voz")+(v.length?v.map((x,i)=>`<button class="act" style="display:block;width:100%;text-align:left;margin:6px 0" onclick="setV(${i})">${x.name} (${x.lang})</button>`).join(""):t("Nenhuma voz em português encontrada. Instala em Definições > Texto para voz."))}
+function sv(x){VR=x;try{localStorage.setItem("ab_rate",x)}catch(e){}voices();say("Olá! Vamos aprender juntos?")}
+function sp(x){PI=x;try{localStorage.setItem("ab_pitch",x)}catch(e){}voices();say("Olá! Vamos aprender juntos?")}
+function setV(i){VOICE=ptv()[i];try{localStorage.setItem("ab_voice",VOICE.name)}catch(e){}voices();say("Olá! Esta é a minha voz. Vamos aprender juntos?")}
 try{speechSynthesis.onvoiceschanged=loadV;loadV()}catch(e){voiceOk=false}
-function say(t){duck=true;clearTimeout(dk);dk=setTimeout(()=>{duck=false},Math.max(1500,t.length*120));try{speechSynthesis.cancel();speechSynthesis.resume();setTimeout(()=>{const u=new SpeechSynthesisUtterance(t);if(VOICE)u.voice=VOICE;u.lang=VOICE?VOICE.lang:"pt-PT";u.rate=.85;u.pitch=1.05;const k=document.querySelector(".tkid");if(k){k.classList.add("talk");const st=()=>k.classList.remove("talk");u.onend=st;u.onerror=st;setTimeout(st,Math.max(1400,t.length*120))}speechSynthesis.speak(u)},80)}catch(e){}}
+let VR=.85,PI=1.05;try{VR=+localStorage.getItem("ab_rate")||.85;PI=+localStorage.getItem("ab_pitch")||1.05}catch(e){}
+function say(t,rm){duck=true;clearTimeout(dk);dk=setTimeout(()=>{duck=false},Math.max(1500,t.length*130));try{speechSynthesis.cancel();speechSynthesis.resume();setTimeout(()=>{const u=new SpeechSynthesisUtterance(t.length<14?", "+t:t);if(VOICE)u.voice=VOICE;u.lang=VOICE?VOICE.lang:"pt-PT";u.rate=VR*(rm||1);u.pitch=Math.min(2,PI*(HERO&&HERO.g==="f"?1.12:1));u.volume=1;const k=document.querySelector(".tkid");if(k){k.classList.add("talk");const st=()=>k.classList.remove("talk");u.onend=st;u.onerror=st;setTimeout(st,Math.max(1400,t.length*130))}speechSynthesis.speak(u)},90)}catch(e){}}
 function testVoice(){loadV();beep(660,.12);say("Olá! Eu sou o Aprendo a Brincar. Vamos aprender juntos?");setTimeout(()=>{const m=document.getElementById("vm");if(m)m.textContent=VOICE&&/PT/i.test(VOICE.lang)?"Se não ouviste: aumenta o volume e abre no Chrome.":"Voz de Portugal não encontrada. Vai a Definições > Idioma > Texto para voz e instala Português (Portugal)."},600)}
-const PH={"Wi-Fi":"uái-fái","Yo-yo":"iô-iô","Kiwi":"quívi","Waffle":"uófle","Yoga":"ióga","Xaile":"chaile","Xadrez":"chadrêz","Karaté":"caraté","Zero":"zêro","Helicóptero":"helicóptero"};
+const PH={"Wi-Fi":"uái-fái","Yo-yo":"iô-iô","Kiwi":"quívi","Waffle":"uófle","Yoga":"ióga","Xaile":"chaile","Xadrez":"chadrêz","Karaté":"caraté","Zero":"zêro","Abelha":"abêlha","Estrela":"estrêla","Janela":"janéla","Ovelha":"ovêlha","Foguete":"foguête","Elefante":"elefânte","Banana":"banâna","Helicóptero":"helicóptero"};
 const LV=["Aprendiz","Explorador","Campeão","Mestre","Super-herói","Lenda"],lvl=q=>Math.min(6,1+Math.floor((q?q.stars||0:stars)/10));
 const STK=["🦄","🚀","🐘","🌈","🦁","🐬","🎸","🍭","🦖","🛸","🐼","🏰","🦋","🎨","🐙","⚽","🚒","🍉","🦊","👑"];
 function premios(){app.innerHTML=bar("Prémios")+`<div class="show"><div class="l">Nível ${lvl()}</div><div class="w">${LV[lvl()-1]}</div><div class="bar"><i style="width:${stars%10*10}%"></i></div><div class="w" style="font-size:1rem">Faltam ${10-stars%10} ⭐ para o próximo nível</div></div><div class="grid">`+STK.map((x,i)=>`<div class="tile" style="--o:${i*20};font-size:2rem;cursor:default">${i<Math.floor(stars/5)?x:"❓"}</div>`).join("")+`</div><div class="msg">${Math.floor(stars/5)} de 20 autocolantes</div>`}
 /* música de fundo (original, sem ficheiros) */
-let MUSIC=true,mtimer=null,mi=0,duck=false,dk;
-try{if(localStorage.getItem("ab_music")==="0")MUSIC=false}catch(e){}
-const MEL=[4,4,5,7,7,5,4,2,0,0,2,4,4,-1,2,2,4,4,5,7,7,5,4,2,0,2,4,2,0,-1,0,-1,7,7,8,9,9,8,7,5,4,4,5,7,5,4,2,-1,7,9,9,8,7,5,4,5,4,2,0,2,4,-1,0,-1],MS=[262,294,330,392,440,523,587,659,784,880],BS=[131,131,196,196,175,175,196,196,131,131,196,196,175,196,131,131];
+let MM=0,mtimer=null,mi=0,duck=false,dk;const MI=["🎉","🌙","🔇"];
+try{const q=localStorage.getItem("ab_mm");if(q!==null)MM=+q}catch(e){}
+const MS=[262,294,330,392,440,523,587,659,784,880];
+const FE=[5,-1,5,6,7,-1,5,-1,4,-1,4,5,6,-1,3,-1,5,-1,5,6,7,-1,8,-1,9,8,7,6,5,-1,-1,-1,2,2,3,4,5,-1,4,3,2,2,3,4,3,-1,1,-1,5,-1,5,6,7,-1,8,9,8,7,6,5,7,5,-1,-1],FB=[131,131,175,196,131,110,175,196];
+const CA=[2,-1,3,-1,4,-1,3,-1,2,-1,1,-1,0,-1,-1,-1,2,-1,3,-1,5,-1,4,-1,3,-1,2,-1,3,-1,-1,-1],CB=[131,175,131,196];
 function mnote(f,d,v,ty){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=ty||"triangle";o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d)}catch(e){}}
 function noise(d,v,hp){try{const n=AC.sampleRate*d|0,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource(),g=AC.createGain(),f=AC.createBiquadFilter();f.type="highpass";f.frequency.value=hp;g.gain.value=v;s.buffer=b;s.connect(f);f.connect(g);g.connect(AC.destination);s.start()}catch(e){}}
 function kick(v){try{const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(45,t+.12);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.15);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+.16)}catch(e){}}
-function tick(){if(!MUSIC||document.hidden)return;const v=duck?.03:.13,d=duck?.012:.06,n=MEL[mi%64];if(n>=0){mnote(MS[n],.24,v);if(!duck)mnote(MS[n]*2,.12,v*.3,"square")}if(mi%4==0){mnote(BS[(mi/4|0)%16],.5,v*1.3,"sine");kick(d*3)}if(mi%8==4)noise(.1,d*2,1500);if(mi%2==1)noise(.03,d,6000);mi++}
-function startMusic(){if(!MUSIC||mtimer)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}mtimer=setInterval(tick,260)}
-function toggleMusic(){MUSIC=!MUSIC;try{localStorage.setItem("ab_music",MUSIC?"1":"0")}catch(e){}document.getElementById("mbtn").textContent=MUSIC?"🎵":"🔇";if(MUSIC)startMusic();else{clearInterval(mtimer);mtimer=null}}
+function tick(){if(MM==2||document.hidden)return;const f=MM==0,v=duck?.04:(f?.17:.1),d=duck?.012:.065,n=(f?FE:CA)[mi%(f?64:32)];
+ if(n>=0){mnote(MS[n],f?.2:.55,v,"sine");mnote(MS[n]*2,f?.09:.3,v*.45,"sine")}
+ if(f){const r=FB[(mi/8|0)%8],st=mi%8;if(st==0||st==3||st==6)mnote(st==3?r*1.5:r,.2,v*1.2,"triangle");if(!duck){if(mi%4==0)kick(d*3);if(mi%4==2)noise(.08,d*2,1200);if(mi%2==1)noise(.03,d,7000)}}
+ else if(mi%8==0)mnote(CB[(mi/8|0)%4],1.6,v*1.1,"sine");
+ mi++}
+function startMusic(){if(MM==2||mtimer)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}mtimer=setInterval(tick,MM==0?220:420)}
+function toggleMusic(){MM=(MM+1)%3;try{localStorage.setItem("ab_mm",MM)}catch(e){}document.getElementById("mbtn").textContent=MI[MM];clearInterval(mtimer);mtimer=null;mi=0;startMusic()}
+function fan(){[523,659,784,1047,1319,1568].forEach((f,i)=>beep(f,.18,i*.09))}
 setInterval(()=>{if(document.hidden)return;const e=document.createElement("span");e.className="fx";e.textContent=["🎈","⭐","🦋","🌈","✨","🎵","🍭"][R(7)];e.style.left=R(92)+"%";e.style.fontSize=(1.2+R(20)/10)+"rem";document.body.appendChild(e);setTimeout(()=>e.remove(),8500)},1300);
-document.body.insertAdjacentHTML("beforeend",'<button id="mbtn" class="mb" onclick="toggleMusic()" aria-label="Música">'+(MUSIC?"🎵":"🔇")+'</button>');
+document.body.insertAdjacentHTML("beforeend",'<button id="mbtn" class="mb" onclick="toggleMusic()" aria-label="Música">'+MI[MM]+'</button>');
 const ACCN={2:"Ganhaste uma capa! 🦸",3:"Ganhaste uma coroa! 👑",4:"Ganhaste óculos! 😎",5:"Ganhaste uma estrela no peito! ⭐"};
 const SK=["#f6c9a0","#f1b98a","#c68a5a","#8d5a3b","#5c3a21"],HC=["#1c1008","#4a2b14","#e0a030","#b5481e","#7b5cff"],SH=["#ff5d73","#2ec4b6","#7b5cff","#ffb627","#4cc9f0","#ff8c42"];
 function hs(k,v){HERO[k]=v;prev();tap(3)}
@@ -229,7 +240,7 @@ function sylSay(x){
  if(c=="W")return {A:"uá",E:"uê",I:"uí",O:"uô",U:"u"}[v];
  if(c=="Y")return {A:"iá",E:"iê",I:"i",O:"iô",U:"iu"}[v];
  return c.toLowerCase()+SV[v]}
-function ssy(x,i){tap(i);document.getElementById("sh").innerHTML=tkRow(i%6,`<span style="font-size:2.2rem">${x}</span>`);say(sylSay(x))}
+function ssy(x,i){tap(i);document.getElementById("sh").innerHTML=tkRow(i%6,`<span style="font-size:2.2rem">${x}</span>`);const w=sylSay(x);say(w+". "+w+".",.85)}
 /* jogos */
 function pool(ok,all,k){const o=[ok];let g=0;while(o.length<k&&g++<80){const x=all[R(all.length)];if(!o.includes(x))o.push(x)}return o.sort(()=>Math.random()-.5)}
 const NS=Array.from({length:10},(_,i)=>i+1);
@@ -255,7 +266,7 @@ function play(g){let show,ok,opts,sp;
 function ans(o,b){const m=document.getElementById("m"),g=CUR.g;
  if(o==CUR.ok){addStar();streak++;b.classList.add("pop");document.getElementById("st").textContent=stars;boom();yes();
   let t=`🎉 Muito bem! +1 ⭐${streak>1?" 🔥 Combo "+streak:""}`,v="Muito bem"+(HERO&&HERO.name?", "+HERO.name:"")+"! Parabéns!";
-  if(stars%10==0){t=`🏆 Subiste para o nível ${lvl()}: ${LV[lvl()-1]}! ${ACCN[lvl()]||""}`;v=`Uau! Subiste de nível! Agora és ${LV[lvl()-1]}!`;boom();boom()}else if(stars%5==0){const x=STK[stars/5-1]||"🎁";t=`🎁 Ganhaste o autocolante ${x}!`;v="Uau! Ganhaste um autocolante novo!"}
+  if(stars%10==0){t=`🏆 Subiste para o nível ${lvl()}: ${LV[lvl()-1]}! ${ACCN[lvl()]||""}`;v=`Uau! Subiste de nível! Agora és ${LV[lvl()-1]}!`;boom();boom();fan()}else if(stars%5==0){const x=STK[stars/5-1]||"🎁";t=`🎁 Ganhaste o autocolante ${x}!`;v="Uau! Ganhaste um autocolante novo!"}
   m.textContent=t;setTimeout(()=>say(v),500);const my=tok;setTimeout(()=>{if(my===tok)play(g)},2600)}
  else{streak=0;b.style.opacity=.25;m.textContent="Tenta outra vez 💪";no();setTimeout(()=>say("Tenta outra vez"+(HERO&&HERO.name?", "+HERO.name:"")),300)}
 }
